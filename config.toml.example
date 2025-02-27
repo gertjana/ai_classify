@@ -1,0 +1,26 @@
+[server]
+port = 3000
+
+[llm-openai]
+api_key = "your-openai-api-key"
+api_uri = "https://api.openai.com/v1/"
+
+# [llm-anthropic]
+# api_key = "your-anthropic-api-key"
+# api_uri = "https://api.anthropic.com/v1/"
+
+# [llm-gemini]
+# api_key = "your-gemini-api-key"
+# api_uri = "https://generativelanguage.googleapis.com/v1beta/"
+
+[storage-redis]
+host = "localhost"
+port = 6379
+
+# [storage-postgres]
+# host = "localhost"
+# port = 5432
+# user = "postgres"
+# password = "postgres"
+# db = "postgres"
+

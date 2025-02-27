@@ -1,18 +1,27 @@
-use axum;
 use crate::api::api::routes;
+use axum;
+use config::Config;
 
 mod api;
 mod llm;
 
 #[tokio::main]
 async fn main() {
-  tracing_subscriber::fmt()
-    .with_max_level(tracing::Level::DEBUG)
-    .init();
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
 
+    let config = Config::builder()
+        .add_source(config::File::with_name("config.toml"))
+        .add_source(config::Environment::with_prefix("APP"))
+        .build()
+        .unwrap();
 
-  let app = routes();
+    let app = routes(config.clone());
 
-  let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-  axum::serve(listener, app).await.unwrap();
+    let port = config.get::<u16>("server.port").unwrap_or(3000);
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))
+        .await
+        .unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
