@@ -8,10 +8,12 @@ Aims to support multiple LLM's and multiple storage solutions
 
 * Rust setup
 * an openai API key
+* A Redis instance running somewhere
 
 Usage:
 
 ```shell
-export OPENAI_API_KEY=<your_key>
+cp config.toml.example config.toml
+echo "update values in config.toml"
 cargo run
 ```
