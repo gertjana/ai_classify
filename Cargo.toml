@@ -1,0 +1,42 @@
+[package]
+name = "classify"
+version = "0.1.0"
+edition = "2021"
+description = "Content classification service with pluggable storage and AI"
+
+[dependencies]
+# API Framework
+axum = "0.7"
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# Storage
+redis = { version = "0.23", features = ["tokio-comp"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# HTTP client for link fetching
+reqwest = { version = "0.11", features = ["json"] }
+
+# Configuration
+config = "0.13"
+dotenvy = "0.15"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Utilities
+async-trait = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.4", features = ["v4", "serde"] }
+regex = "1.9"
+url = "2.4"
+
+[dev-dependencies]
+mockall = "0.11"
+tokio-test = "0.4"
