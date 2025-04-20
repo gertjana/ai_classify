@@ -1,5 +1,5 @@
-use crate::classifier::Classifier;
 use crate::classifier::claude::ClaudeClassifier;
+use crate::classifier::Classifier;
 use crate::ClassifyResult;
 
 #[cfg(test)]

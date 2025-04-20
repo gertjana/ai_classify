@@ -4,8 +4,8 @@ pub mod tag;
 #[cfg(test)]
 mod integration_test;
 
-use async_trait::async_trait;
 use crate::{ClassifyResult, Content};
+use async_trait::async_trait;
 use std::sync::Arc;
 
 /// ContentStorage trait for storing and retrieving content
@@ -50,10 +50,10 @@ pub async fn create_content_storage(
 ) -> ClassifyResult<Arc<dyn ContentStorage>> {
     match storage_type {
         crate::config::StorageType::Filesystem => {
-            let storage = content::filesystem::FilesystemContentStorage::new(&config.content_storage_path)?;
+            let storage =
+                content::filesystem::FilesystemContentStorage::new(&config.content_storage_path)?;
             Ok(Arc::new(storage))
-        }
-        // Add more storage types as needed
+        } // Add more storage types as needed
     }
 }
 
@@ -64,9 +64,12 @@ pub async fn create_tag_storage(
 ) -> ClassifyResult<Arc<dyn TagStorage>> {
     match storage_type {
         crate::config::TagStorageType::Redis => {
-            let storage = tag::redis::RedisTagStorage::new(&config.redis_url, config.redis_password.as_deref()).await?;
+            let storage = tag::redis::RedisTagStorage::new(
+                &config.redis_url,
+                config.redis_password.as_deref(),
+            )
+            .await?;
             Ok(Arc::new(storage))
-        }
-        // Add more tag storage types as needed
+        } // Add more tag storage types as needed
     }
 }

@@ -1,8 +1,8 @@
+use crate::ClassifyError;
 use serde::Deserialize;
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 use std::sync::OnceLock;
-use crate::ClassifyError;
 
 static CONFIG: OnceLock<AppConfig> = OnceLock::new();
 
@@ -103,16 +103,16 @@ impl AppConfig {
             .parse()
             .map_err(|e| ClassifyError::ConfigError(format!("Invalid STORAGE_TYPE: {}", e)))?;
 
-        let content_storage_path = std::env::var("CONTENT_STORAGE_PATH")
-            .unwrap_or_else(|_| "./data/content".to_string());
+        let content_storage_path =
+            std::env::var("CONTENT_STORAGE_PATH").unwrap_or_else(|_| "./data/content".to_string());
 
         let tag_storage_type = std::env::var("TAG_STORAGE_TYPE")
             .unwrap_or_else(|_| "redis".to_string())
             .parse()
             .map_err(|e| ClassifyError::ConfigError(format!("Invalid TAG_STORAGE_TYPE: {}", e)))?;
 
-        let redis_url = std::env::var("REDIS_URL")
-            .unwrap_or_else(|_| "redis://127.0.0.1:6379".to_string());
+        let redis_url =
+            std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".to_string());
 
         let redis_password = std::env::var("REDIS_PASSWORD").ok();
 

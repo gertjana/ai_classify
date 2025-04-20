@@ -6,9 +6,9 @@ pub mod classifier;
 pub mod config;
 pub mod storage;
 
-use std::fmt;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use thiserror::Error;
 use uuid::Uuid;
 

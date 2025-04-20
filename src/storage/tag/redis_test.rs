@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
-use mockall::predicate::*;
 use mockall::mock;
+use mockall::predicate::*;
 
 use crate::storage::TagStorage;
 use crate::ClassifyResult;
@@ -32,7 +32,14 @@ mod tests {
 
         // Setup expectations
         mock.expect_add_tags()
-            .with(eq(content_id), function(|t: &[String]| t.len() == 2 && t.contains(&"rust".to_string()) && t.contains(&"programming".to_string())))
+            .with(
+                eq(content_id),
+                function(|t: &[String]| {
+                    t.len() == 2
+                        && t.contains(&"rust".to_string())
+                        && t.contains(&"programming".to_string())
+                }),
+            )
             .times(1)
             .returning(|_, _| Ok(()));
 
@@ -80,9 +87,13 @@ mod tests {
         let mut mock = MockTagStorageMock::new();
 
         // Setup expectations
-        mock.expect_list_tags()
-            .times(1)
-            .returning(|| Ok(vec!["rust".to_string(), "programming".to_string(), "testing".to_string()]));
+        mock.expect_list_tags().times(1).returning(|| {
+            Ok(vec![
+                "rust".to_string(),
+                "programming".to_string(),
+                "testing".to_string(),
+            ])
+        });
 
         // List all tags
         let all_tags = mock.list_tags().await?;
@@ -126,7 +137,10 @@ mod tests {
 
         // Setup expectations
         mock.expect_remove_tags()
-            .with(eq(content_id), function(|t: &[String]| t.len() == 1 && t[0] == "programming"))
+            .with(
+                eq(content_id),
+                function(|t: &[String]| t.len() == 1 && t[0] == "programming"),
+            )
             .times(1)
             .returning(|_, _| Ok(()));
 
@@ -156,28 +170,29 @@ mod tests {
 
         // Setup mock to simulate the new implementation's behavior
         // where we extract tag names from tag:*:contents keys
-        mock.expect_list_tags()
-            .times(1)
-            .returning(|| {
-                // This simulates what happens in the real implementation:
-                // 1. Get all keys matching "classify:tag:*:contents"
-                let keys = vec![
-                    "classify:tag:rust:contents".to_string(),
-                    "classify:tag:programming:contents".to_string(),
-                    "classify:tag:testing:contents".to_string(),
-                ];
+        mock.expect_list_tags().times(1).returning(|| {
+            // This simulates what happens in the real implementation:
+            // 1. Get all keys matching "classify:tag:*:contents"
+            let keys = vec![
+                "classify:tag:rust:contents".to_string(),
+                "classify:tag:programming:contents".to_string(),
+                "classify:tag:testing:contents".to_string(),
+            ];
 
-                // 2. Extract tag names from keys
-                let mut tags = HashSet::new();
-                for key in keys {
-                    if let Some(tag) = key.strip_prefix("classify:tag:").and_then(|s| s.strip_suffix(":contents")) {
-                        tags.insert(tag.to_string());
-                    }
+            // 2. Extract tag names from keys
+            let mut tags = HashSet::new();
+            for key in keys {
+                if let Some(tag) = key
+                    .strip_prefix("classify:tag:")
+                    .and_then(|s| s.strip_suffix(":contents"))
+                {
+                    tags.insert(tag.to_string());
                 }
+            }
 
-                // 3. Return as vector
-                Ok(tags.into_iter().collect())
-            });
+            // 3. Return as vector
+            Ok(tags.into_iter().collect())
+        });
 
         // Call list_tags
         let tags = mock.list_tags().await?;

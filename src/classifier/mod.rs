@@ -3,8 +3,8 @@ pub mod claude;
 #[cfg(test)]
 mod claude_test;
 
-use async_trait::async_trait;
 use crate::ClassifyResult;
+use async_trait::async_trait;
 use std::sync::Arc;
 
 /// Classifier trait for classifying content
@@ -29,7 +29,6 @@ pub async fn create_classifier(
                 config.max_prompt_length,
             )?;
             Ok(Arc::new(classifier))
-        }
-        // Add more classifier types as needed
+        } // Add more classifier types as needed
     }
 }

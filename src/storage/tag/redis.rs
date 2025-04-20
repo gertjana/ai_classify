@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 use redis::AsyncCommands;
-use std::sync::Arc;
 use std::collections::HashSet;
+use std::sync::Arc;
 
-use crate::{ClassifyError, ClassifyResult};
 use crate::storage::TagStorage;
+use crate::{ClassifyError, ClassifyResult};
 
 /// Redis-based tag storage
 pub struct RedisTagStorage {
@@ -15,11 +15,13 @@ pub struct RedisTagStorage {
 impl RedisTagStorage {
     /// Create a new Redis tag storage
     pub async fn new(redis_url: &str, redis_password: Option<&str>) -> ClassifyResult<Self> {
-        let client = redis::Client::open(redis_url)
-            .map_err(|e| ClassifyError::StorageError(format!("Failed to create Redis client: {}", e)))?;
+        let client = redis::Client::open(redis_url).map_err(|e| {
+            ClassifyError::StorageError(format!("Failed to create Redis client: {}", e))
+        })?;
 
-        let mut connection = client.get_async_connection().await
-            .map_err(|e| ClassifyError::StorageError(format!("Failed to connect to Redis: {}", e)))?;
+        let mut connection = client.get_async_connection().await.map_err(|e| {
+            ClassifyError::StorageError(format!("Failed to connect to Redis: {}", e))
+        })?;
 
         // Authenticate if password is provided
         if let Some(password) = redis_password {
@@ -27,7 +29,9 @@ impl RedisTagStorage {
                 .arg(password)
                 .query_async::<_, ()>(&mut connection)
                 .await
-                .map_err(|e| ClassifyError::StorageError(format!("Failed to authenticate to Redis: {}", e)))?;
+                .map_err(|e| {
+                    ClassifyError::StorageError(format!("Failed to authenticate to Redis: {}", e))
+                })?;
         }
 
         Ok(Self {
@@ -70,7 +74,8 @@ impl TagStorage for RedisTagStorage {
         }
 
         // Execute pipeline
-        pipe.query_async::<_, ()>(&mut *conn).await
+        pipe.query_async::<_, ()>(&mut *conn)
+            .await
             .map_err(|e| ClassifyError::StorageError(format!("Failed to add tags: {}", e)))?;
 
         Ok(())
@@ -80,7 +85,9 @@ impl TagStorage for RedisTagStorage {
         let mut conn = self.connection.lock().await;
         let content_tags_key = self.get_content_tags_key(content_id);
 
-        let tags: Vec<String> = conn.smembers(&content_tags_key).await
+        let tags: Vec<String> = conn
+            .smembers(&content_tags_key)
+            .await
             .map_err(|e| ClassifyError::StorageError(format!("Failed to get tags: {}", e)))?;
 
         Ok(tags)
@@ -101,7 +108,10 @@ impl TagStorage for RedisTagStorage {
         let mut tags = HashSet::new();
         for key in tag_keys {
             // Extract tag from "classify:tag:{tag}:contents"
-            if let Some(tag) = key.strip_prefix("classify:tag:").and_then(|s| s.strip_suffix(":contents")) {
+            if let Some(tag) = key
+                .strip_prefix("classify:tag:")
+                .and_then(|s| s.strip_suffix(":contents"))
+            {
                 tags.insert(tag.to_string());
             }
         }
@@ -113,7 +123,9 @@ impl TagStorage for RedisTagStorage {
         let mut conn = self.connection.lock().await;
         let tag_contents_key = self.get_tag_contents_key(tag);
 
-        let content_ids: Vec<String> = conn.smembers(&tag_contents_key).await
+        let content_ids: Vec<String> = conn
+            .smembers(&tag_contents_key)
+            .await
             .map_err(|e| ClassifyError::StorageError(format!("Failed to find by tag: {}", e)))?;
 
         Ok(content_ids)
@@ -139,7 +151,8 @@ impl TagStorage for RedisTagStorage {
         }
 
         // Execute pipeline
-        pipe.query_async::<_, ()>(&mut *conn).await
+        pipe.query_async::<_, ()>(&mut *conn)
+            .await
             .map_err(|e| ClassifyError::StorageError(format!("Failed to remove tags: {}", e)))?;
 
         Ok(())

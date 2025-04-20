@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{get, post, delete},
+    routing::{delete, get, post},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
@@ -10,11 +10,11 @@ use std::collections::HashSet;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
-use tracing::{info, error};
+use tracing::{error, info};
 
-use crate::{ClassifyError, ClassifyRequest, ClassifyResponse, Content, ContentQueryResponse};
 use crate::classifier::Classifier;
 use crate::storage::{ContentStorage, TagStorage};
+use crate::{ClassifyError, ClassifyRequest, ClassifyResponse, Content, ContentQueryResponse};
 
 /// API server state
 pub struct AppState {
@@ -117,7 +117,10 @@ async fn classify_content(
     state.content_storage.store(&content).await?;
 
     // Store tags
-    state.tag_storage.add_tags(&content.id.to_string(), &tags).await?;
+    state
+        .tag_storage
+        .add_tags(&content.id.to_string(), &tags)
+        .await?;
 
     // Return response
     let response = ClassifyResponse {
@@ -137,7 +140,8 @@ async fn query_content(
     info!("Received content query request for tags: {}", params.tags);
 
     // Parse tags from query string
-    let tags: Vec<String> = params.tags
+    let tags: Vec<String> = params
+        .tags
         .split(',')
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
@@ -159,7 +163,10 @@ async fn query_content(
         }
     }
 
-    info!("Found {} content items matching the tags", content_ids.len());
+    info!(
+        "Found {} content items matching the tags",
+        content_ids.len()
+    );
 
     // Retrieve content for found IDs
     let mut items = Vec::new();
@@ -206,7 +213,10 @@ async fn delete_content(
         let deleted = state.content_storage.delete(&id).await?;
 
         if !deleted {
-            return Err(ApiError::BadRequest(format!("Failed to delete content with ID: {}", id)));
+            return Err(ApiError::BadRequest(format!(
+                "Failed to delete content with ID: {}",
+                id
+            )));
         }
 
         // Track which tags are orphaned and should be removed
@@ -236,7 +246,10 @@ async fn delete_content(
 
         Ok(Json(response))
     } else {
-        Err(ApiError::BadRequest(format!("Content with ID {} not found", id)))
+        Err(ApiError::BadRequest(format!(
+            "Content with ID {} not found",
+            id
+        )))
     }
 }
 

@@ -3,8 +3,8 @@ use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::{ClassifyError, ClassifyResult};
 use crate::classifier::Classifier;
+use crate::{ClassifyError, ClassifyResult};
 
 const MAX_TAGS: usize = 5;
 const CLAUDE_API_URL: &str = "https://api.anthropic.com/v1/messages";
@@ -61,18 +61,24 @@ impl ClaudeClassifier {
             content.to_string()
         } else {
             let truncated = &content[0..self.max_prompt_length];
-            format!("{}... [content truncated, original length: {}]", truncated, content.len())
+            format!(
+                "{}... [content truncated, original length: {}]",
+                truncated,
+                content.len()
+            )
         }
     }
 
     /// Extract content from a URL
     async fn extract_content_from_url(&self, url: &str) -> ClassifyResult<String> {
         // Validate URL
-        let url = Url::parse(url)
-            .map_err(|e| ClassifyError::UrlError(format!("Invalid URL: {}", e)))?;
+        let url =
+            Url::parse(url).map_err(|e| ClassifyError::UrlError(format!("Invalid URL: {}", e)))?;
 
         // Fetch URL content
-        let response = self.client.get(url.as_str())
+        let response = self
+            .client
+            .get(url.as_str())
             .send()
             .await
             .map_err(|e| ClassifyError::HttpError(format!("Failed to fetch URL: {}", e)))?;
@@ -85,8 +91,9 @@ impl ClaudeClassifier {
         }
 
         // Get text content
-        let content = response.text().await
-            .map_err(|e| ClassifyError::HttpError(format!("Failed to read response body: {}", e)))?;
+        let content = response.text().await.map_err(|e| {
+            ClassifyError::HttpError(format!("Failed to read response body: {}", e))
+        })?;
 
         // Truncate content if needed
         Ok(self.truncate_content(&content))
@@ -107,8 +114,9 @@ impl ClaudeClassifier {
         headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
         headers.insert(
             "x-api-key",
-            HeaderValue::from_str(&format!("{}", api_key))
-                .map_err(|e| ClassifyError::ClassificationError(format!("Invalid API key: {}", e)))?
+            HeaderValue::from_str(&format!("{}", api_key)).map_err(|e| {
+                ClassifyError::ClassificationError(format!("Invalid API key: {}", e))
+            })?,
         );
 
         // Truncate content if needed
@@ -125,8 +133,7 @@ impl ClaudeClassifier {
 
         let user_prompt = format!(
             "Please analyze the following content and provide up to {} descriptive tags: \n\n{}",
-            MAX_TAGS,
-            truncated_content
+            MAX_TAGS, truncated_content
         );
 
         // Create the request payload
@@ -141,33 +148,40 @@ impl ClaudeClassifier {
         };
 
         // Make the API call
-        let response = self.client.post(CLAUDE_API_URL)
+        let response = self
+            .client
+            .post(CLAUDE_API_URL)
             .headers(headers)
             .json(&request)
             .send()
             .await
-            .map_err(|e| ClassifyError::ClassificationError(format!("Failed to call Claude API: {}", e)))?;
+            .map_err(|e| {
+                ClassifyError::ClassificationError(format!("Failed to call Claude API: {}", e))
+            })?;
 
         let status = response.status();
 
         // Check if the response was successful
         if !status.is_success() {
-            let error_text = response.text().await
+            let error_text = response
+                .text()
+                .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
 
             return Err(ClassifyError::ClassificationError(format!(
                 "Claude API error: HTTP status {}, {}",
-                status,
-                error_text
+                status, error_text
             )));
         }
 
         // Parse the response
-        let claude_response = response.json::<ClaudeResponse>().await
-            .map_err(|e| ClassifyError::ClassificationError(format!("Failed to parse Claude response: {}", e)))?;
+        let claude_response = response.json::<ClaudeResponse>().await.map_err(|e| {
+            ClassifyError::ClassificationError(format!("Failed to parse Claude response: {}", e))
+        })?;
 
         // Extract tags from the response
-        let tags_text = claude_response.content
+        let tags_text = claude_response
+            .content
             .iter()
             .filter(|content| content.content_type == "text")
             .map(|content| content.text.clone())
@@ -209,7 +223,8 @@ impl ClaudeClassifier {
             tags.push("database".to_string());
         }
 
-        if content.contains("ai") || content.contains("machine learning") || content.contains("ml") {
+        if content.contains("ai") || content.contains("machine learning") || content.contains("ml")
+        {
             tags.push("ai".to_string());
         }
 

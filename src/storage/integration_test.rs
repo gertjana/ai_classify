@@ -3,11 +3,11 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::Content;
-use crate::storage::{ContentStorage, TagStorage};
 use crate::storage::content::filesystem::FilesystemContentStorage;
 use crate::storage::tag::redis::RedisTagStorage;
+use crate::storage::{ContentStorage, TagStorage};
 use crate::ClassifyResult;
+use crate::Content;
 
 /// Integration tests that combine multiple storage components
 /// These tests require an actual Redis server, so they are marked as ignored by default
@@ -63,16 +63,23 @@ mod tests {
 
         // Set up tag storage expectations
         let content_id_clone = content_id.clone();
-        tag_storage.expect_add_tags()
-            .with(function(move |id: &str| id == content_id_clone), function(|t: &[String]| {
-                t.len() == 2 && t.contains(&"tag1".to_string()) && t.contains(&"tag2".to_string())
-            }))
+        tag_storage
+            .expect_add_tags()
+            .with(
+                function(move |id: &str| id == content_id_clone),
+                function(|t: &[String]| {
+                    t.len() == 2
+                        && t.contains(&"tag1".to_string())
+                        && t.contains(&"tag2".to_string())
+                }),
+            )
             .times(1)
             .returning(|_, _| Ok(()));
 
         let tags_clone = tags.clone();
         let content_id_for_get = content_id.clone();
-        tag_storage.expect_get_tags()
+        tag_storage
+            .expect_get_tags()
             .with(function(move |id: &str| id == content_id_for_get))
             .times(1)
             .returning(move |_| Ok(tags_clone.clone()));
@@ -123,7 +130,8 @@ mod tests {
         content_storage.store(&content2).await?;
 
         // Set up tag storage expectations
-        tag_storage.expect_find_by_tag()
+        tag_storage
+            .expect_find_by_tag()
             .with(eq("tag1"))
             .times(1)
             .returning(move |_| Ok(vec![content_id1.clone(), content_id2.clone()]));
@@ -166,7 +174,11 @@ mod tests {
         // Create test content
         let content = Content::new("Real Redis integration test".to_string());
         let content_id = content.id.to_string();
-        let tags = vec!["integration".to_string(), "test".to_string(), "redis".to_string()];
+        let tags = vec![
+            "integration".to_string(),
+            "test".to_string(),
+            "redis".to_string(),
+        ];
 
         // Store content
         content_storage.store(&content).await?;
