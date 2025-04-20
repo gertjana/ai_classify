@@ -37,7 +37,7 @@ impl ContentStorage for FilesystemContentStorage {
     async fn store(&self, content: &Content) -> ClassifyResult<()> {
         let file_path = self.get_file_path(&content.id.to_string());
         let json = serde_json::to_string_pretty(content)
-            .map_err(|e| ClassifyError::SerializationError(e))?;
+            .map_err(ClassifyError::SerializationError)?;
 
         // Create directory if it doesn't exist
         if let Some(parent) = file_path.parent() {
@@ -81,7 +81,7 @@ impl ContentStorage for FilesystemContentStorage {
             .map_err(|e| ClassifyError::StorageError(format!("Failed to read file: {}", e)))?;
 
         let content =
-            serde_json::from_str(&contents).map_err(|e| ClassifyError::SerializationError(e))?;
+            serde_json::from_str(&contents).map_err(ClassifyError::SerializationError)?;
 
         Ok(Some(content))
     }
@@ -98,7 +98,7 @@ impl ContentStorage for FilesystemContentStorage {
         })? {
             let path = entry.path();
 
-            if path.is_file() && path.extension().map_or(false, |ext| ext == "json") {
+            if path.is_file() && path.extension().is_some_and(|ext| ext == "json") {
                 let file_name = path.file_stem().unwrap().to_string_lossy();
 
                 if let Some(content) = self.get(&file_name).await? {

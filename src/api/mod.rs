@@ -204,7 +204,7 @@ async fn delete_content(
     info!("Received delete content request for ID: {}", id);
 
     // Check if content exists
-    if let Some(_) = state.content_storage.get(&id).await? {
+    if (state.content_storage.get(&id).await?).is_some() {
         // Get the tags for this content before deletion
         let tags = state.tag_storage.get_tags(&id).await?;
         info!("Content has {} tags that may need cleanup", tags.len());

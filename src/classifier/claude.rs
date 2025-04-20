@@ -114,7 +114,7 @@ impl ClaudeClassifier {
         headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
         headers.insert(
             "x-api-key",
-            HeaderValue::from_str(&format!("{}", api_key)).map_err(|e| {
+            HeaderValue::from_str(&api_key.to_string()).map_err(|e| {
                 ClassifyError::ClassificationError(format!("Invalid API key: {}", e))
             })?,
         );
