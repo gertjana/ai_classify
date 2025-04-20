@@ -56,7 +56,7 @@ impl ClaudeClassifier {
     }
 
     /// Truncate content to maximum length
-    fn truncate_content(&self, content: &str) -> String {
+    pub fn truncate_content(&self, content: &str) -> String {
         if content.len() <= self.max_prompt_length {
             content.to_string()
         } else {

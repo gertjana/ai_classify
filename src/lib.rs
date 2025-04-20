@@ -1,3 +1,6 @@
+#[cfg(test)]
+extern crate mockall;
+
 pub mod api;
 pub mod classifier;
 pub mod config;

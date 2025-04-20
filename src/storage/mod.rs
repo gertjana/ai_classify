@@ -1,6 +1,9 @@
 pub mod content;
 pub mod tag;
 
+#[cfg(test)]
+mod integration_test;
+
 use async_trait::async_trait;
 use crate::{ClassifyResult, Content};
 use std::sync::Arc;

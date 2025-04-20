@@ -1,5 +1,8 @@
 pub mod claude;
 
+#[cfg(test)]
+mod claude_test;
+
 use async_trait::async_trait;
 use crate::ClassifyResult;
 use std::sync::Arc;
