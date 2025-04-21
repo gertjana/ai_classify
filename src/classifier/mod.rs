@@ -10,10 +10,7 @@ use std::sync::Arc;
 /// Classifier trait for classifying content
 #[async_trait]
 pub trait Classifier: Send + Sync {
-    /// Classify content and return tags
     async fn classify(&self, content: &str) -> ClassifyResult<Vec<String>>;
-
-    /// Extract and classify content from a URL
     async fn classify_url(&self, url: &str) -> ClassifyResult<Vec<String>>;
 }
 

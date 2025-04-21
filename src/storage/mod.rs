@@ -22,6 +22,9 @@ pub trait ContentStorage: Send + Sync {
 
     /// Delete content by ID
     async fn delete(&self, id: &str) -> ClassifyResult<bool>;
+
+    /// Find content by hash
+    async fn find_by_hash(&self, hash: &str) -> ClassifyResult<Option<Content>>;
 }
 
 /// TagStorage trait for storing and retrieving tags

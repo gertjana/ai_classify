@@ -16,18 +16,17 @@ use crate::classifier::Classifier;
 use crate::storage::{ContentStorage, TagStorage};
 use crate::{ClassifyError, ClassifyRequest, ClassifyResponse, Content, ContentQueryResponse};
 
+#[cfg(test)]
+mod tests;
+
 /// API server state
 pub struct AppState {
-    /// Content classifier
     pub classifier: Arc<dyn Classifier>,
-    /// Content storage
     pub content_storage: Arc<dyn ContentStorage>,
-    /// Tag storage
     pub tag_storage: Arc<dyn TagStorage>,
 }
 
 impl AppState {
-    /// Create a new app state
     pub fn new(
         classifier: Arc<dyn Classifier>,
         content_storage: Arc<dyn ContentStorage>,
@@ -41,23 +40,16 @@ impl AppState {
     }
 }
 
-/// Query parameters for content search
 #[derive(Debug, Deserialize)]
 pub struct QueryParams {
-    /// Tags to search for (comma-separated)
     pub tags: String,
 }
 
-/// Response for delete operation
 #[derive(Debug, Serialize)]
 pub struct DeleteResponse {
-    /// Whether the deletion was successful
     pub success: bool,
-    /// ID of the deleted content
     pub id: Option<String>,
-    /// Tags that were removed (orphaned tags)
     pub removed_tags: Vec<String>,
-    /// Any error message
     pub error: Option<String>,
 }
 
@@ -98,10 +90,22 @@ async fn classify_content(
 ) -> Result<Json<ClassifyResponse>, ApiError> {
     info!("Received classification request");
 
-    // Create content object
+    let content_hash = Content::generate_hash(&request.content);
+
+    if let Some(existing_content) = state.content_storage.find_by_hash(&content_hash).await? {
+        info!("Found existing content with the same hash");
+
+        let response = ClassifyResponse {
+            content: existing_content,
+            success: true,
+            error: None,
+        };
+
+        return Err(ApiError::Conflict(response));
+    }
+
     let content = Content::new(request.content.clone());
 
-    // Detect if content is a URL and classify accordingly
     let tags = if content.is_url() {
         info!("Detected URL: {}", &content.content);
         state.classifier.classify_url(&content.content).await?
@@ -110,19 +114,16 @@ async fn classify_content(
         state.classifier.classify(&content.content).await?
     };
 
-    // Add tags to content
     let content = content.with_tags(tags.clone());
 
-    // Store content
+    // RESEARCH: should the next two lines be in a transaction?
     state.content_storage.store(&content).await?;
 
-    // Store tags
     state
         .tag_storage
         .add_tags(&content.id.to_string(), &tags)
         .await?;
 
-    // Return response
     let response = ClassifyResponse {
         content,
         success: true,
@@ -132,7 +133,6 @@ async fn classify_content(
     Ok(Json(response))
 }
 
-/// Query content by tags endpoint
 async fn query_content(
     State(state): State<Arc<AppState>>,
     Query(params): Query<QueryParams>,
@@ -151,13 +151,9 @@ async fn query_content(
         return Err(ApiError::BadRequest("No valid tags provided".to_string()));
     }
 
-    // Find all content IDs that match any of the provided tags
     let mut content_ids = HashSet::new();
-
     for tag in &tags {
         let tag_content_ids = state.tag_storage.find_by_tag(tag).await?;
-
-        // Add all content IDs for this tag (union operation)
         for id in tag_content_ids {
             content_ids.insert(id);
         }
@@ -168,7 +164,6 @@ async fn query_content(
         content_ids.len()
     );
 
-    // Retrieve content for found IDs
     let mut items = Vec::new();
     for content_id in content_ids {
         if let Some(content) = state.content_storage.get(&content_id).await? {
@@ -178,13 +173,10 @@ async fn query_content(
 
     info!("Retrieved {} content items", items.len());
 
-    // Sort by most recently updated first
     items.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
 
-    // Calculate count before moving items
     let count = items.len();
 
-    // Return response
     let response = ContentQueryResponse {
         items,
         tags,
@@ -196,20 +188,18 @@ async fn query_content(
     Ok(Json(response))
 }
 
-/// Delete content endpoint
 async fn delete_content(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> Result<Json<DeleteResponse>, ApiError> {
     info!("Received delete content request for ID: {}", id);
 
-    // Check if content exists
     if (state.content_storage.get(&id).await?).is_some() {
-        // Get the tags for this content before deletion
         let tags = state.tag_storage.get_tags(&id).await?;
         info!("Content has {} tags that may need cleanup", tags.len());
 
-        // Delete the content
+        // RESEARCH: should deletion of content and tags be transactional?
+
         let deleted = state.content_storage.delete(&id).await?;
 
         if !deleted {
@@ -219,24 +209,19 @@ async fn delete_content(
             )));
         }
 
-        // Track which tags are orphaned and should be removed
         let mut orphaned_tags = Vec::new();
 
-        // For each tag, check if it's used by any other content
         for tag in &tags {
             let content_with_tag = state.tag_storage.find_by_tag(tag).await?;
 
-            // After removal of this content, if no other content has this tag, we can remove it entirely
             if content_with_tag.is_empty() {
                 info!("Tag '{}' is now orphaned, will be removed", tag);
                 orphaned_tags.push(tag.clone());
             }
         }
 
-        // Remove the content's association with all its tags
         state.tag_storage.remove_tags(&id, &tags).await?;
 
-        // Return response with information about orphaned tags
         let response = DeleteResponse {
             success: true,
             id: Some(id),
@@ -253,12 +238,10 @@ async fn delete_content(
     }
 }
 
-/// API error type
 pub enum ApiError {
-    /// Internal server error
     InternalError(ClassifyError),
-    /// Bad request
     BadRequest(String),
+    Conflict(ClassifyResponse),
 }
 
 impl From<ClassifyError> for ApiError {
@@ -292,6 +275,10 @@ impl IntoResponse for ApiError {
                 });
 
                 (StatusCode::BAD_REQUEST, body).into_response()
+            }
+            Self::Conflict(response) => {
+                // Return 409 Conflict with the duplicate content
+                (StatusCode::CONFLICT, Json(response)).into_response()
             }
         }
     }

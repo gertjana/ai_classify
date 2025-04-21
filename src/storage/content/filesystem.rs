@@ -9,16 +9,13 @@ use crate::{ClassifyError, ClassifyResult, Content};
 
 /// Filesystem-based content storage
 pub struct FilesystemContentStorage {
-    /// Base directory for content storage
     base_dir: PathBuf,
 }
 
 impl FilesystemContentStorage {
-    /// Create a new filesystem content storage
     pub fn new(base_dir: &str) -> ClassifyResult<Self> {
         let path = PathBuf::from(base_dir);
 
-        // Create directory if it doesn't exist
         fs::create_dir_all(&path).map_err(|e| {
             ClassifyError::StorageError(format!("Failed to create directory: {}", e))
         })?;
@@ -26,7 +23,6 @@ impl FilesystemContentStorage {
         Ok(Self { base_dir: path })
     }
 
-    /// Get file path for content ID
     fn get_file_path(&self, id: &str) -> PathBuf {
         self.base_dir.join(format!("{}.json", id))
     }
@@ -36,10 +32,9 @@ impl FilesystemContentStorage {
 impl ContentStorage for FilesystemContentStorage {
     async fn store(&self, content: &Content) -> ClassifyResult<()> {
         let file_path = self.get_file_path(&content.id.to_string());
-        let json = serde_json::to_string_pretty(content)
-            .map_err(ClassifyError::SerializationError)?;
+        let json =
+            serde_json::to_string_pretty(content).map_err(ClassifyError::SerializationError)?;
 
-        // Create directory if it doesn't exist
         if let Some(parent) = file_path.parent() {
             create_dir_all(parent).await.map_err(|e| {
                 ClassifyError::StorageError(format!("Failed to create directory: {}", e))
@@ -80,8 +75,7 @@ impl ContentStorage for FilesystemContentStorage {
             .await
             .map_err(|e| ClassifyError::StorageError(format!("Failed to read file: {}", e)))?;
 
-        let content =
-            serde_json::from_str(&contents).map_err(ClassifyError::SerializationError)?;
+        let content = serde_json::from_str(&contents).map_err(ClassifyError::SerializationError)?;
 
         Ok(Some(content))
     }
@@ -122,5 +116,17 @@ impl ContentStorage for FilesystemContentStorage {
             .map_err(|e| ClassifyError::StorageError(format!("Failed to delete file: {}", e)))?;
 
         Ok(true)
+    }
+
+    async fn find_by_hash(&self, hash: &str) -> ClassifyResult<Option<Content>> {
+        let all_content = self.list().await?;
+
+        for content in all_content {
+            if content.content_hash.as_deref() == Some(hash) {
+                return Ok(Some(content));
+            }
+        }
+
+        Ok(None)
     }
 }

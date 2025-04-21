@@ -8,31 +8,30 @@ pub mod storage;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::fmt;
 use thiserror::Error;
 use uuid::Uuid;
 
-/// Represents a piece of content with its classification tags
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Content {
-    /// Unique identifier for the content
     pub id: Uuid,
-    /// Original text content or URL
     pub content: String,
-    /// Classification tags assigned to the content
+    pub content_hash: Option<String>,
     pub tags: Vec<String>,
-    /// When the content was created
     pub created_at: DateTime<Utc>,
-    /// When the content was last updated
     pub updated_at: DateTime<Utc>,
 }
 
 impl Content {
     pub fn new(content: String) -> Self {
         let now = Utc::now();
+        let content_hash = Self::generate_hash(&content);
+
         Self {
             id: Uuid::new_v4(),
             content,
+            content_hash: Some(content_hash),
             tags: Vec::new(),
             created_at: now,
             updated_at: now,
@@ -48,6 +47,13 @@ impl Content {
     /// Check if content is a URL
     pub fn is_url(&self) -> bool {
         self.content.starts_with("http://") || self.content.starts_with("https://")
+    }
+
+    /// Generate a SHA-256 hash of the content string
+    pub fn generate_hash(content: &str) -> String {
+        let mut hasher = Sha256::new();
+        hasher.update(content.as_bytes());
+        format!("{:x}", hasher.finalize())
     }
 }
 
@@ -67,40 +73,27 @@ impl fmt::Display for Content {
     }
 }
 
-/// Represents a classification request
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClassifyRequest {
-    /// The content to classify (text or URL)
     pub content: String,
 }
 
-/// Represents a classification response
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClassifyResponse {
-    /// The classified content
     pub content: Content,
-    /// Whether the classification was successful
     pub success: bool,
-    /// Any error message
     pub error: Option<String>,
 }
 
-/// Represents a content query response
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContentQueryResponse {
-    /// The content items matching the query
     pub items: Vec<Content>,
-    /// The tags that were queried
     pub tags: Vec<String>,
-    /// Total number of items found
     pub count: usize,
-    /// Whether the query was successful
     pub success: bool,
-    /// Any error message
     pub error: Option<String>,
 }
 
-/// Application error types
 #[derive(Debug, Error)]
 pub enum ClassifyError {
     #[error("Configuration error: {0}")]
@@ -128,5 +121,27 @@ pub enum ClassifyError {
     HttpError(String),
 }
 
-/// Result type for the application
 pub type ClassifyResult<T> = Result<T, ClassifyError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_content_hash_generation() {
+        let text = "Test content for hashing";
+        let content1 = Content::new(text.to_string());
+        let content2 = Content::new(text.to_string());
+
+        assert!(content1.content_hash.is_some());
+        assert!(content2.content_hash.is_some());
+
+        assert_eq!(content1.content_hash, content2.content_hash);
+
+        let content3 = Content::new("Different content".to_string());
+        assert_ne!(content1.content_hash, content3.content_hash);
+
+        let direct_hash = Content::generate_hash(text);
+        assert_eq!(Some(direct_hash), content1.content_hash);
+    }
+}

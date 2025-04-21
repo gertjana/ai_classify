@@ -9,7 +9,6 @@ use classify::storage::{create_content_storage, create_tag_storage};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize logging
     let subscriber = FmtSubscriber::builder()
         .with_max_level(Level::INFO)
         .finish();
@@ -18,7 +17,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Starting classify application...");
 
-    // Initialize configuration
     let config = match AppConfig::init() {
         Ok(config) => config,
         Err(e) => {
@@ -27,7 +25,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    // Create content storage
     let content_storage =
         match create_content_storage(&config.storage.storage_type, &config.storage).await {
             Ok(storage) => storage,
@@ -42,7 +39,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config.storage.storage_type
     );
 
-    // Create tag storage
     let tag_storage =
         match create_tag_storage(&config.tag_storage.tag_storage_type, &config.tag_storage).await {
             Ok(storage) => storage,
@@ -57,7 +53,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config.tag_storage.tag_storage_type
     );
 
-    // Create classifier
     let classifier =
         match create_classifier(&config.classifier.classifier_type, &config.classifier).await {
             Ok(classifier) => classifier,
@@ -72,10 +67,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config.classifier.classifier_type
     );
 
-    // Create app state
     let app_state = AppState::new(classifier, content_storage, tag_storage);
 
-    // Get API address
     let addr = match config.api_addr() {
         Ok(addr) => addr,
         Err(e) => {
@@ -84,7 +77,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    // Start API server
     info!(
         "Starting API server on {}:{}",
         config.api.host, config.api.port
