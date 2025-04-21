@@ -14,7 +14,9 @@ use tracing::{error, info};
 
 use crate::classifier::Classifier;
 use crate::storage::{ContentStorage, TagStorage};
-use crate::{ClassifyError, ClassifyRequest, ClassifyResponse, Content, ContentQueryResponse};
+use crate::{
+    ClassifyError, ClassifyRequest, ClassifyResponse, Content, ContentQueryResponse, TagsResponse,
+};
 
 #[cfg(test)]
 mod tests;
@@ -60,6 +62,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/classify", post(classify_content))
         .route("/query", get(query_content))
         .route("/content/:id", delete(delete_content))
+        .route("/tags", get(get_tags))
         .with_state(Arc::new(state))
 }
 
@@ -236,6 +239,27 @@ async fn delete_content(
             id
         )))
     }
+}
+
+/// Get all tags endpoint
+async fn get_tags(State(state): State<Arc<AppState>>) -> Result<Json<TagsResponse>, ApiError> {
+    info!("Received request for all tags");
+
+    // Retrieve all tags from storage
+    let tags = state.tag_storage.list_tags().await?;
+    let count = tags.len();
+
+    info!("Retrieved {} tags", count);
+
+    // Return response
+    let response = TagsResponse {
+        tags,
+        count,
+        success: true,
+        error: None,
+    };
+
+    Ok(Json(response))
 }
 
 pub enum ApiError {

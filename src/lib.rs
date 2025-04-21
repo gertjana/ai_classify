@@ -85,15 +85,35 @@ pub struct ClassifyResponse {
     pub error: Option<String>,
 }
 
+/// Represents a content query response
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContentQueryResponse {
+    /// The content items matching the query
     pub items: Vec<Content>,
+    /// The tags that were queried
     pub tags: Vec<String>,
+    /// Total number of items found
     pub count: usize,
+    /// Whether the query was successful
     pub success: bool,
+    /// Any error message
     pub error: Option<String>,
 }
 
+/// Represents a tags list response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TagsResponse {
+    /// List of all tags in the system
+    pub tags: Vec<String>,
+    /// Total number of tags
+    pub count: usize,
+    /// Whether the operation was successful
+    pub success: bool,
+    /// Any error message
+    pub error: Option<String>,
+}
+
+/// Application error types
 #[derive(Debug, Error)]
 pub enum ClassifyError {
     #[error("Configuration error: {0}")]

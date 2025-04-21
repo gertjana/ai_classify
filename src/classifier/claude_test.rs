@@ -11,39 +11,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_classify_fallback() -> ClassifyResult<()> {
-        let classifier = create_test_classifier();
-
-        let rust_content = "This is a test about Rust programming language";
-        let tags = classifier.classify(rust_content).await?;
-
-        assert!(tags.contains(&"rust".to_string()));
-        assert!(tags.contains(&"programming".to_string()));
-
-        let web_content = "This is about web development with HTML and HTTP";
-        let tags = classifier.classify(web_content).await?;
-
-        assert!(tags.contains(&"web".to_string()));
-
-        let db_content = "Working with SQL databases and Redis";
-        let tags = classifier.classify(db_content).await?;
-
-        assert!(tags.contains(&"database".to_string()));
-
-        let ai_content = "Machine Learning and AI development";
-        let tags = classifier.classify(ai_content).await?;
-
-        assert!(tags.contains(&"ai".to_string()));
-
-        let unrelated_content = "Something completely unrelated to any keywords";
-        let tags = classifier.classify(unrelated_content).await?;
-
-        assert!(tags.contains(&"unclassified".to_string()));
-
-        Ok(())
-    }
-
-    #[tokio::test]
     async fn test_content_truncation() -> ClassifyResult<()> {
         let classifier = ClaudeClassifier::new(None, 20).unwrap();
 

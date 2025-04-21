@@ -13,7 +13,7 @@ mod tests {
 
     use crate::classifier::Classifier;
     use crate::storage::{ContentStorage, TagStorage};
-    use crate::{ClassifyRequest, ClassifyResponse, ClassifyResult, Content};
+    use crate::{ClassifyRequest, ClassifyResponse, ClassifyResult, Content, TagsResponse};
 
     // Mock Classifier
     mock! {
@@ -97,6 +97,57 @@ mod tests {
         assert_eq!(response.content.content, test_content);
         assert!(response.content.tags.contains(&"test".to_string()));
         assert!(response.content.tags.contains(&"duplicate".to_string()));
+        assert!(response.success);
+        assert!(response.error.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_get_tags() {
+        // Set up mocks
+        let classifier_mock = MockClassifierMock::new();
+        let content_storage_mock = MockContentStorageMock::new();
+        let mut tag_storage_mock = MockTagStorageMock::new();
+
+        // Mock the list_tags method
+        let mock_tags = vec![
+            "rust".to_string(),
+            "programming".to_string(),
+            "web".to_string(),
+        ];
+
+        tag_storage_mock
+            .expect_list_tags()
+            .times(1)
+            .returning(move || Ok(mock_tags.clone()));
+
+        // Create app state
+        let state = AppState {
+            classifier: Arc::new(classifier_mock),
+            content_storage: Arc::new(content_storage_mock),
+            tag_storage: Arc::new(tag_storage_mock),
+        };
+
+        // Create router
+        let app = create_router(state);
+
+        // Create request
+        let request = Request::get("/tags").body(Body::empty()).unwrap();
+
+        // Call the endpoint
+        let response = app.oneshot(request).await.unwrap();
+
+        // Verify response status
+        assert_eq!(response.status(), StatusCode::OK);
+
+        // Parse the response body
+        let body = response_to_bytes(response).await;
+        let response: TagsResponse = serde_json::from_slice(&body).unwrap();
+
+        // Verify the response contains the expected tags
+        assert_eq!(response.count, 3);
+        assert!(response.tags.contains(&"rust".to_string()));
+        assert!(response.tags.contains(&"programming".to_string()));
+        assert!(response.tags.contains(&"web".to_string()));
         assert!(response.success);
         assert!(response.error.is_none());
     }
