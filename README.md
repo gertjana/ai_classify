@@ -120,6 +120,22 @@ Use this endpoint to find content with any of the specified tags. Multiple tags 
 }
 ```
 
+### List All Tags
+
+**Endpoint**: `GET /tags`
+
+Use this endpoint to retrieve a list of all tags currently in the system.
+
+**Response**:
+```json
+{
+  "tags": ["tag1", "tag2", "tag3", "programming", "rust", "web"],
+  "count": 6,
+  "success": true,
+  "error": null
+}
+```
+
 ### Delete Content
 
 **Endpoint**: `DELETE /content/:id`
