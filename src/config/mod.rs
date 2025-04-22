@@ -3,59 +3,42 @@ use serde::Deserialize;
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 use std::sync::OnceLock;
+use uuid;
 
 static CONFIG: OnceLock<AppConfig> = OnceLock::new();
 
-/// Application configuration
 #[derive(Debug, Clone, Deserialize)]
 pub struct AppConfig {
-    /// API configuration
     pub api: ApiConfig,
-    /// Storage configuration
     pub storage: StorageConfig,
-    /// Tag storage configuration
     pub tag_storage: TagStorageConfig,
-    /// Classifier configuration
     pub classifier: ClassifierConfig,
 }
 
-/// API configuration
 #[derive(Debug, Clone, Deserialize)]
 pub struct ApiConfig {
-    /// Host to bind to
     pub host: String,
-    /// Port to bind to
     pub port: u16,
+    pub api_key: String,
 }
 
-/// Storage configuration
 #[derive(Debug, Clone, Deserialize)]
 pub struct StorageConfig {
-    /// Storage type
     pub storage_type: StorageType,
-    /// Path to content storage (for filesystem)
     pub content_storage_path: String,
 }
 
-/// Tag storage configuration
 #[derive(Debug, Clone, Deserialize)]
 pub struct TagStorageConfig {
-    /// Tag storage type
     pub tag_storage_type: TagStorageType,
-    /// Redis URL (for Redis)
     pub redis_url: String,
-    /// Redis password (for Redis)
     pub redis_password: Option<String>,
 }
 
-/// Classifier configuration
 #[derive(Debug, Clone, Deserialize)]
 pub struct ClassifierConfig {
-    /// Classifier type
     pub classifier_type: ClassifierType,
-    /// Anthropic API key (for Claude)
     pub anthropic_api_key: Option<String>,
-    /// Maximum prompt length in characters
     pub max_prompt_length: usize,
 }
 
@@ -63,33 +46,24 @@ pub struct ClassifierConfig {
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum StorageType {
-    /// Filesystem storage
     Filesystem,
-    // Add more storage types as needed
 }
 
 /// Tag storage types
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum TagStorageType {
-    /// Redis storage
     Redis,
-    // Add more tag storage types as needed
 }
 
-/// Classifier types
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum ClassifierType {
-    /// Claude classifier
     Claude,
-    // Add more classifier types as needed
 }
 
 impl AppConfig {
-    /// Initialize the application configuration
     pub fn init() -> Result<&'static Self, ClassifyError> {
-        // Load .env file if it exists
         dotenvy::dotenv().ok();
 
         let api_host = std::env::var("API_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
@@ -97,6 +71,15 @@ impl AppConfig {
             .unwrap_or_else(|_| "3000".to_string())
             .parse::<u16>()
             .map_err(|e| ClassifyError::ConfigError(format!("Invalid API_PORT: {}", e)))?;
+
+        let api_key = std::env::var("API_KEY").unwrap_or_else(|_| {
+            let random_key = uuid::Uuid::new_v4().to_string();
+            eprintln!(
+                "No API_KEY found in environment, generated random key: {}",
+                random_key
+            );
+            random_key
+        });
 
         let storage_type = std::env::var("STORAGE_TYPE")
             .unwrap_or_else(|_| "filesystem".to_string())
@@ -132,6 +115,7 @@ impl AppConfig {
             api: ApiConfig {
                 host: api_host,
                 port: api_port,
+                api_key,
             },
             storage: StorageConfig {
                 storage_type,

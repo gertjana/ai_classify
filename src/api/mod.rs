@@ -1,6 +1,7 @@
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
+    middleware::from_fn_with_state,
     response::{IntoResponse, Response},
     routing::{delete, get, post},
     Json, Router,
@@ -18,10 +19,12 @@ use crate::{
     ClassifyError, ClassifyRequest, ClassifyResponse, Content, ContentQueryResponse, TagsResponse,
 };
 
+mod middleware;
 #[cfg(test)]
 mod tests;
 
 /// API server state
+#[derive(Clone)]
 pub struct AppState {
     pub classifier: Arc<dyn Classifier>,
     pub content_storage: Arc<dyn ContentStorage>,
@@ -57,13 +60,19 @@ pub struct DeleteResponse {
 
 /// Create the API router
 pub fn create_router(state: AppState) -> Router {
+    let shared_state = Arc::new(state);
+
     Router::new()
         .route("/", get(health_check))
         .route("/classify", post(classify_content))
         .route("/query", get(query_content))
         .route("/content/:id", delete(delete_content))
         .route("/tags", get(get_tags))
-        .with_state(Arc::new(state))
+        .layer(from_fn_with_state(
+            shared_state.clone(),
+            middleware::validate_api_key,
+        ))
+        .with_state(shared_state)
 }
 
 /// Start the API server

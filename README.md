@@ -34,6 +34,7 @@ Configuration is handled via environment variables, which can be set in a `.env`
 # API Configuration
 API_HOST=127.0.0.1
 API_PORT=3000
+API_KEY=your_secret_api_key
 
 # Storage Configuration
 STORAGE_TYPE=filesystem
@@ -66,6 +67,17 @@ cargo build --release
 ```
 
 ## API Usage
+
+### Authentication
+
+All API endpoints require authentication using an API key. The key must be provided in the `X-Api-Key` HTTP header with every request.
+
+Example:
+```
+X-Api-Key: your_secret_api_key
+```
+
+If the API key is not set in the environment variables, a random key will be generated on startup and printed to the console. You can set your own API key using the `API_KEY` environment variable.
 
 ### Classify Content
 
