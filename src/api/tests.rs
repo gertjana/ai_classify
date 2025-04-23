@@ -157,6 +157,12 @@ mod tests {
         // Verify response status
         assert_eq!(response.status(), StatusCode::OK);
 
+        // Verify Content-Type header
+        assert_eq!(
+            response.headers().get("Content-Type").unwrap(),
+            "application/json"
+        );
+
         // Parse the response body
         let body = response_to_bytes(response).await;
         let response: TagsResponse = serde_json::from_slice(&body).unwrap();
@@ -168,6 +174,66 @@ mod tests {
         assert!(response.tags.contains(&"web".to_string()));
         assert!(response.success);
         assert!(response.error.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_get_content_text() {
+        // Mock the config for testing
+        let api_key = "test-api-key";
+        let content_id = "test-content-id";
+        let test_content = "This is the content text for testing";
+
+        // Set up mocks
+        let classifier_mock = MockClassifierMock::new();
+        let mut content_storage_mock = MockContentStorageMock::new();
+        let tag_storage_mock = MockTagStorageMock::new();
+
+        // Create a test content item
+        let content = Content::new(test_content.to_string()).with_tags(vec!["test".to_string()]);
+
+        // Mock the get method
+        content_storage_mock
+            .expect_get()
+            .with(eq(content_id))
+            .times(1)
+            .returning(move |_| Ok(Some(content.clone())));
+
+        // Create app state
+        let state = AppState {
+            classifier: Arc::new(classifier_mock),
+            content_storage: Arc::new(content_storage_mock),
+            tag_storage: Arc::new(tag_storage_mock),
+        };
+
+        // Create router without middleware for testing
+        let app = Router::new()
+            .route("/content/:id", get(crate::api::get_content_text))
+            .with_state(Arc::new(state));
+
+        // Create request
+        let request = Request::get(&format!("/content/{}", content_id))
+            .header("X-Api-Key", api_key)
+            .body(Body::empty())
+            .unwrap();
+
+        // Call the endpoint
+        let response = app.oneshot(request).await.unwrap();
+
+        // Verify response status
+        assert_eq!(response.status(), StatusCode::OK);
+
+        // Verify Content-Type header
+        assert_eq!(
+            response.headers().get("Content-Type").unwrap(),
+            "text/plain; charset=utf-8"
+        );
+
+        // Parse the response body as plain text
+        let body = response_to_bytes(response).await;
+        let text = String::from_utf8(body).unwrap();
+
+        // Verify the response contains the content text
+        assert_eq!(text, test_content);
     }
 
     async fn response_to_bytes(response: Response) -> Vec<u8> {

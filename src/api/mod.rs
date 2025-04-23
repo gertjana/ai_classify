@@ -23,7 +23,6 @@ mod middleware;
 #[cfg(test)]
 mod tests;
 
-/// API server state
 #[derive(Clone)]
 pub struct AppState {
     pub classifier: Arc<dyn Classifier>,
@@ -58,7 +57,6 @@ pub struct DeleteResponse {
     pub error: Option<String>,
 }
 
-/// Create the API router
 pub fn create_router(state: AppState) -> Router {
     let shared_state = Arc::new(state);
 
@@ -67,6 +65,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/classify", post(classify_content))
         .route("/query", get(query_content))
         .route("/content/:id", delete(delete_content))
+        .route("/content/:id", get(get_content_text))
         .route("/tags", get(get_tags))
         .layer(from_fn_with_state(
             shared_state.clone(),
@@ -75,7 +74,6 @@ pub fn create_router(state: AppState) -> Router {
         .with_state(shared_state)
 }
 
-/// Start the API server
 pub async fn start_server(app_state: AppState, addr: SocketAddr) -> Result<(), ClassifyError> {
     let app = create_router(app_state);
 
@@ -91,8 +89,11 @@ pub async fn start_server(app_state: AppState, addr: SocketAddr) -> Result<(), C
 }
 
 /// Health check endpoint
-async fn health_check() -> impl IntoResponse {
-    StatusCode::OK
+async fn health_check() -> Response {
+    Response::builder()
+        .status(StatusCode::OK)
+        .body(axum::body::Body::empty())
+        .unwrap()
 }
 
 /// Classify content endpoint
@@ -250,7 +251,6 @@ async fn delete_content(
     }
 }
 
-/// Get all tags endpoint
 async fn get_tags(State(state): State<Arc<AppState>>) -> Result<Json<TagsResponse>, ApiError> {
     info!("Received request for all tags");
 
@@ -269,6 +269,34 @@ async fn get_tags(State(state): State<Arc<AppState>>) -> Result<Json<TagsRespons
     };
 
     Ok(Json(response))
+}
+
+/// Get content by ID endpoint (returns plain text)
+async fn get_content_text(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Result<Response, ApiError> {
+    info!("Received get content text request for ID: {}", id);
+
+    // Retrieve content from storage
+    let content_option = state.content_storage.get(&id).await?;
+
+    if let Some(content) = content_option {
+        // Return the content text with 200 OK status and Content-Type header
+        let response = Response::builder()
+            .status(StatusCode::OK)
+            .header("Content-Type", "text/plain; charset=utf-8")
+            .body(axum::body::Body::from(content.content))
+            .unwrap();
+
+        Ok(response)
+    } else {
+        // Content not found
+        Err(ApiError::BadRequest(format!(
+            "Content with ID {} not found",
+            id
+        )))
+    }
 }
 
 pub enum ApiError {
@@ -296,7 +324,14 @@ impl IntoResponse for ApiError {
                     error: Some(format!("Internal server error: {}", error)),
                 });
 
-                (StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
+                // Create response with explicit Content-Type header
+                Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .header("Content-Type", "application/json")
+                    .body(axum::body::Body::from(
+                        serde_json::to_string(&body.0).unwrap(),
+                    ))
+                    .unwrap()
             }
             Self::BadRequest(message) => {
                 let body = Json(ContentQueryResponse {
@@ -307,11 +342,24 @@ impl IntoResponse for ApiError {
                     error: Some(message),
                 });
 
-                (StatusCode::BAD_REQUEST, body).into_response()
+                // Create response with explicit Content-Type header
+                Response::builder()
+                    .status(StatusCode::BAD_REQUEST)
+                    .header("Content-Type", "application/json")
+                    .body(axum::body::Body::from(
+                        serde_json::to_string(&body.0).unwrap(),
+                    ))
+                    .unwrap()
             }
             Self::Conflict(response) => {
-                // Return 409 Conflict with the duplicate content
-                (StatusCode::CONFLICT, Json(response)).into_response()
+                // Create response with explicit Content-Type header
+                Response::builder()
+                    .status(StatusCode::CONFLICT)
+                    .header("Content-Type", "application/json")
+                    .body(axum::body::Body::from(
+                        serde_json::to_string(&response).unwrap(),
+                    ))
+                    .unwrap()
             }
         }
     }

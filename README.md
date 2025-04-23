@@ -30,7 +30,7 @@ The application consists of the following main components:
 
 Configuration is handled via environment variables, which can be set in a `.env` file:
 
-```
+```text
 # API Configuration
 API_HOST=127.0.0.1
 API_PORT=3000
@@ -73,7 +73,8 @@ cargo build --release
 All API endpoints require authentication using an API key. The key must be provided in the `X-Api-Key` HTTP header with every request.
 
 Example:
-```
+
+```text
 X-Api-Key: your_secret_api_key
 ```
 
@@ -84,6 +85,7 @@ If the API key is not set in the environment variables, a random key will be gen
 **Endpoint**: `POST /classify`
 
 **Request Body**:
+
 ```json
 {
   "content": "This is some text to classify or a URL starting with http:// or https://"
@@ -93,6 +95,7 @@ If the API key is not set in the environment variables, a random key will be gen
 The application automatically detects if the content is a URL by checking if it starts with `http://` or `https://`.
 
 **Response**:
+
 ```json
 {
   "content": {
@@ -114,6 +117,7 @@ The application automatically detects if the content is a URL by checking if it 
 Use this endpoint to find content with any of the specified tags. Multiple tags can be provided as a comma-separated list, and the endpoint will return all content that has at least one of those tags.
 
 **Response**:
+
 ```json
 {
   "items": [
@@ -139,6 +143,7 @@ Use this endpoint to find content with any of the specified tags. Multiple tags 
 Use this endpoint to retrieve a list of all tags currently in the system.
 
 **Response**:
+
 ```json
 {
   "tags": ["tag1", "tag2", "tag3", "programming", "rust", "web"],
@@ -155,6 +160,7 @@ Use this endpoint to retrieve a list of all tags currently in the system.
 Use this endpoint to delete content by its ID. The endpoint will also clean up any orphaned tags (tags that are no longer used by any content).
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -162,6 +168,18 @@ Use this endpoint to delete content by its ID. The endpoint will also clean up a
   "removed_tags": ["orphaned-tag1", "orphaned-tag2"],
   "error": null
 }
+```
+
+### Get Content as Plain Text
+
+**Endpoint**: `GET /content/:id`
+
+Use this endpoint to retrieve the content text for a specific ID as plain text (not JSON).
+
+**Response**: Plain text content (Content-Type: text/plain)
+
+```text
+This is the raw content text that was classified.
 ```
 
 ### Health Check
