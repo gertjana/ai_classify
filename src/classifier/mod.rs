@@ -1,7 +1,11 @@
+pub mod chatgpt;
 pub mod claude;
 
 #[cfg(test)]
 mod claude_test;
+
+#[cfg(test)]
+mod chatgpt_test;
 
 use crate::ClassifyResult;
 use async_trait::async_trait;
@@ -26,6 +30,22 @@ pub async fn create_classifier(
                 config.max_prompt_length,
             )?;
             Ok(Arc::new(classifier))
-        } // Add more classifier types as needed
+        }
+        crate::config::ClassifierType::ChatGpt => {
+            if let Some(model) = &config.openai_model {
+                let classifier = chatgpt::ChatGptClassifier::with_model(
+                    config.openai_api_key.as_deref(),
+                    model,
+                    config.max_prompt_length,
+                )?;
+                Ok(Arc::new(classifier))
+            } else {
+                let classifier = chatgpt::ChatGptClassifier::new(
+                    config.openai_api_key.as_deref(),
+                    config.max_prompt_length,
+                )?;
+                Ok(Arc::new(classifier))
+            }
+        }
     }
 }

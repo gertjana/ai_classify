@@ -39,6 +39,8 @@ pub struct TagStorageConfig {
 pub struct ClassifierConfig {
     pub classifier_type: ClassifierType,
     pub anthropic_api_key: Option<String>,
+    pub openai_api_key: Option<String>,
+    pub openai_model: Option<String>,
     pub max_prompt_length: usize,
 }
 
@@ -60,6 +62,7 @@ pub enum TagStorageType {
 #[serde(rename_all = "lowercase")]
 pub enum ClassifierType {
     Claude,
+    ChatGpt,
 }
 
 impl AppConfig {
@@ -105,6 +108,8 @@ impl AppConfig {
             .map_err(|e| ClassifyError::ConfigError(format!("Invalid CLASSIFIER_TYPE: {}", e)))?;
 
         let anthropic_api_key = std::env::var("ANTHROPIC_API_KEY").ok();
+        let openai_api_key = std::env::var("OPENAI_API_KEY").ok();
+        let openai_model = std::env::var("OPENAI_MODEL").ok();
 
         let max_prompt_length = std::env::var("MAX_PROMPT_LENGTH")
             .unwrap_or_else(|_| "200000".to_string())
@@ -129,6 +134,8 @@ impl AppConfig {
             classifier: ClassifierConfig {
                 classifier_type,
                 anthropic_api_key,
+                openai_api_key,
+                openai_model,
                 max_prompt_length,
             },
         };
@@ -180,6 +187,7 @@ impl FromStr for ClassifierType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "claude" => Ok(ClassifierType::Claude),
+            "chatgpt" => Ok(ClassifierType::ChatGpt),
             _ => Err(format!("Unknown classifier type: {}", s)),
         }
     }

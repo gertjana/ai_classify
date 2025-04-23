@@ -60,8 +60,8 @@ pub struct DeleteResponse {
 pub fn create_router(state: AppState) -> Router {
     let shared_state = Arc::new(state);
 
-    Router::new()
-        .route("/", get(health_check))
+    // Create a router for protected routes (requires API key)
+    let protected_routes = Router::new()
         .route("/classify", post(classify_content))
         .route("/query", get(query_content))
         .route("/content/:id", delete(delete_content))
@@ -70,7 +70,12 @@ pub fn create_router(state: AppState) -> Router {
         .layer(from_fn_with_state(
             shared_state.clone(),
             middleware::validate_api_key,
-        ))
+        ));
+
+    // Create the main router, with the health check route unprotected
+    Router::new()
+        .route("/", get(health_check))
+        .merge(protected_routes)
         .with_state(shared_state)
 }
 
