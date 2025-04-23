@@ -46,7 +46,6 @@ struct ResponseMessage {
 }
 
 impl ChatGptClassifier {
-    /// Create a new ChatGPT classifier
     pub fn new(api_key: Option<&str>, max_prompt_length: usize) -> ClassifyResult<Self> {
         Ok(Self {
             api_key: api_key.map(String::from),
@@ -56,7 +55,6 @@ impl ChatGptClassifier {
         })
     }
 
-    /// Create a new ChatGPT classifier with a specific model
     pub fn with_model(
         api_key: Option<&str>,
         model: &str,
@@ -67,7 +65,6 @@ impl ChatGptClassifier {
         Ok(classifier)
     }
 
-    /// Truncate content to maximum length
     pub fn truncate_content(&self, content: &str) -> String {
         if content.len() <= self.max_prompt_length {
             content.to_string()
@@ -81,7 +78,6 @@ impl ChatGptClassifier {
         }
     }
 
-    /// Extract content from a URL
     async fn extract_content_from_url(&self, url: &str) -> ClassifyResult<String> {
         let url =
             Url::parse(url).map_err(|e| ClassifyError::UrlError(format!("Invalid URL: {}", e)))?;
