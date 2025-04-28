@@ -20,6 +20,25 @@ The application consists of the following main components:
 3. **Tag Storage**: Pluggable storage for tags (starts with Redis)
 4. **Classifier**: Pluggable AI/LLM for classification (starts with Claude)
 
+## Implemented Modules
+
+The following modules are currently implemented:
+
+### Classifiers
+
+- **Claude**: Uses Anthropic's Claude API for content classification
+- **ChatGPT**: Uses OpenAI's ChatGPT API for content classification
+
+### Content Storage
+
+- **Filesystem**: Stores content as JSON files in a local directory
+- **Redis**: Stores content as JSON strings in Redis
+- **S3**: Stores content as JSON objects in an AWS S3 bucket
+
+### Tag Storage
+
+- **Redis**: Manages tags in Redis sets
+
 ## Requirements
 
 - Rust 1.70+
