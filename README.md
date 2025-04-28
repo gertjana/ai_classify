@@ -42,8 +42,9 @@ The following modules are currently implemented:
 ## Requirements
 
 - Rust 1.70+
-- Redis server (for tag storage)
-- Optional: Anthropic API key for Claude classifier
+- Redis server (for redis tag/content storage)
+- AWS Credentials for S3 content storage
+- API Keys for claude / chatgpt
 
 ## Configuration
 
@@ -53,21 +54,48 @@ Configuration is handled via environment variables, which can be set in a `.env`
 # API Configuration
 API_HOST=127.0.0.1
 API_PORT=3000
-API_KEY=your_secret_api_key
-
+API_KEY=your_api_key
 # Storage Configuration
-STORAGE_TYPE=filesystem
-CONTENT_STORAGE_PATH=./data/content
+
+# Filesystem
+# STORAGE_TYPE=filesystem
+# CONTENT_STORAGE_PATH=./data/content
+
+# Redis
+STORAGE_TYPE=redis
+CONTENT_REDIS_URL=redis://your-redis-server:6379
+CONTENT_REDIS_PASSWORD=optional-password  # Optional
+CONTENT_REDIS_PREFIX=optional-prefix:     # Optional
+
+# AWS S3
+# STORAGE_TYPE=s3
+# S3_BUCKET=ai-classify-content-storage
+# S3_REGION=eu-west-1
+# S3_PREFIX=
+
+# Enable either AWS_PROFILE or S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY
+#AWS_PROFILE=your_aws_profile
+#S3_ACCESS_KEY_ID=your_s3_access_key_id
+#S3_SECRET_ACCESS_KEY=your_s3_secret_access_key
 
 # Tag Storage Configuration
+
+# Redis
 TAG_STORAGE_TYPE=redis
 REDIS_URL=redis://127.0.0.1:6379
 REDIS_PASSWORD=
 
+
 # Classifier Configuration
+MAX_PROMPT_LENGTH=10000
+
+# Claude
 CLASSIFIER_TYPE=claude
 ANTHROPIC_API_KEY=your_anthropic_api_key
-MAX_PROMPT_LENGTH=200000
+
+# ChatGPT
+# CLASSIFIER_TYPE=chatgpt
+# OPENAI_API_KEY=your_openai_api_key
 
 # Logging
 LOG_LEVEL=info
