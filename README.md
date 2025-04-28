@@ -104,15 +104,20 @@ LOG_LEVEL=info
 
 ### Classifier Configuration Options
 
-#### Claude
+```env
+MAX_PROMPT_LENGTH=200000  # Maximum length of content to send
 ```
+
+#### Claude
+
+```env
 CLASSIFIER_TYPE=claude
 ANTHROPIC_API_KEY=your_anthropic_api_key
-MAX_PROMPT_LENGTH=200000  # Maximum length of content to send to Claude
 ```
 
 #### ChatGPT
-```
+
+```env
 CLASSIFIER_TYPE=chatgpt
 OPENAI_API_KEY=your_openai_api_key
 MAX_PROMPT_LENGTH=16000  # Maximum length of content to send to ChatGPT
@@ -121,13 +126,15 @@ MAX_PROMPT_LENGTH=16000  # Maximum length of content to send to ChatGPT
 ### Content Storage Configuration Options
 
 #### Filesystem
-```
+
+```env
 CONTENT_STORAGE_TYPE=filesystem
 CONTENT_STORAGE_PATH=./data/content  # Local directory path to store content
 ```
 
 #### Redis
-```
+
+```env
 CONTENT_STORAGE_TYPE=redis
 CONTENT_REDIS_URL=redis://127.0.0.1:6379  # Must use CONTENT_REDIS_URL, not REDIS_URL
 CONTENT_REDIS_PASSWORD=your_redis_password  # Optional
@@ -135,7 +142,8 @@ CONTENT_REDIS_PREFIX=classify:content:  # Optional, prefix for Redis keys
 ```
 
 #### S3
-```
+
+```env
 CONTENT_STORAGE_TYPE=s3
 S3_BUCKET=your-bucket-name
 S3_PREFIX=classify/  # Optional, prefix for S3 objects
@@ -149,7 +157,8 @@ AWS_SECRET_ACCESS_KEY=your_secret_key  # Optional, direct AWS secret key
 ### Tag Storage Configuration Options
 
 #### Redis
-```
+
+```env
 TAG_STORAGE_TYPE=redis
 REDIS_URL=redis://127.0.0.1:6379  # Tag storage uses REDIS_URL (not CONTENT_REDIS_URL)
 REDIS_PASSWORD=your_redis_password  # Optional

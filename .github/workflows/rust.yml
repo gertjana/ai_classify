@@ -62,7 +62,7 @@ jobs:
           args: --all-features -- --ignored
         env:
           REDIS_URL: "redis://localhost:6379"
-
+          CONTENT_REDIS_URL: "redis://localhost:6379"
   build:
     name: Build
     runs-on: ubuntu-latest
