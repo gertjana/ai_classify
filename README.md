@@ -55,20 +55,21 @@ Configuration is handled via environment variables, which can be set in a `.env`
 API_HOST=127.0.0.1
 API_PORT=3000
 API_KEY=your_api_key
+
 # Storage Configuration
 
 # Filesystem
-# STORAGE_TYPE=filesystem
+# CONTENT_STORAGE_TYPE=filesystem
 # CONTENT_STORAGE_PATH=./data/content
 
 # Redis
-STORAGE_TYPE=redis
+CONTENT_STORAGE_TYPE=redis
 CONTENT_REDIS_URL=redis://your-redis-server:6379
 CONTENT_REDIS_PASSWORD=optional-password  # Optional
 CONTENT_REDIS_PREFIX=optional-prefix:     # Optional
 
 # AWS S3
-# STORAGE_TYPE=s3
+# CONTENT_STORAGE_TYPE=s3
 # S3_BUCKET=ai-classify-content-storage
 # S3_REGION=eu-west-1
 # S3_PREFIX=
@@ -99,6 +100,59 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 
 # Logging
 LOG_LEVEL=info
+```
+
+### Classifier Configuration Options
+
+#### Claude
+```
+CLASSIFIER_TYPE=claude
+ANTHROPIC_API_KEY=your_anthropic_api_key
+MAX_PROMPT_LENGTH=200000  # Maximum length of content to send to Claude
+```
+
+#### ChatGPT
+```
+CLASSIFIER_TYPE=chatgpt
+OPENAI_API_KEY=your_openai_api_key
+MAX_PROMPT_LENGTH=16000  # Maximum length of content to send to ChatGPT
+```
+
+### Content Storage Configuration Options
+
+#### Filesystem
+```
+CONTENT_STORAGE_TYPE=filesystem
+CONTENT_STORAGE_PATH=./data/content  # Local directory path to store content
+```
+
+#### Redis
+```
+CONTENT_STORAGE_TYPE=redis
+CONTENT_REDIS_URL=redis://127.0.0.1:6379  # Must use CONTENT_REDIS_URL, not REDIS_URL
+CONTENT_REDIS_PASSWORD=your_redis_password  # Optional
+CONTENT_REDIS_PREFIX=classify:content:  # Optional, prefix for Redis keys
+```
+
+#### S3
+```
+CONTENT_STORAGE_TYPE=s3
+S3_BUCKET=your-bucket-name
+S3_PREFIX=classify/  # Optional, prefix for S3 objects
+S3_REGION=us-east-1
+# Authentication - either use profile or direct credentials
+AWS_PROFILE=default  # Optional, AWS credentials profile
+AWS_ACCESS_KEY_ID=your_access_key  # Optional, direct AWS access key
+AWS_SECRET_ACCESS_KEY=your_secret_key  # Optional, direct AWS secret key
+```
+
+### Tag Storage Configuration Options
+
+#### Redis
+```
+TAG_STORAGE_TYPE=redis
+REDIS_URL=redis://127.0.0.1:6379  # Tag storage uses REDIS_URL (not CONTENT_REDIS_URL)
+REDIS_PASSWORD=your_redis_password  # Optional
 ```
 
 ## Getting Started

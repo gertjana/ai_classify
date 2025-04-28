@@ -95,10 +95,12 @@ impl AppConfig {
             random_key
         });
 
-        let storage_type = std::env::var("STORAGE_TYPE")
+        let storage_type = std::env::var("CONTENT_STORAGE_TYPE")
             .unwrap_or_else(|_| "filesystem".to_string())
             .parse()
-            .map_err(|e| ClassifyError::ConfigError(format!("Invalid STORAGE_TYPE: {}", e)))?;
+            .map_err(|e| {
+                ClassifyError::ConfigError(format!("Invalid CONTENT_STORAGE_TYPE: {}", e))
+            })?;
 
         let content_storage_path =
             std::env::var("CONTENT_STORAGE_PATH").unwrap_or_else(|_| "./data/content".to_string());
