@@ -26,6 +26,12 @@ pub struct ApiConfig {
 pub struct StorageConfig {
     pub storage_type: StorageType,
     pub content_storage_path: String,
+    pub s3_bucket: Option<String>,
+    pub s3_prefix: Option<String>,
+    pub s3_region: Option<String>,
+    pub s3_profile: Option<String>,
+    pub s3_access_key: Option<String>,
+    pub s3_secret_key: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -49,6 +55,7 @@ pub struct ClassifierConfig {
 #[serde(rename_all = "lowercase")]
 pub enum StorageType {
     Filesystem,
+    S3,
 }
 
 /// Tag storage types
@@ -92,6 +99,14 @@ impl AppConfig {
         let content_storage_path =
             std::env::var("CONTENT_STORAGE_PATH").unwrap_or_else(|_| "./data/content".to_string());
 
+        // S3 configuration
+        let s3_bucket = std::env::var("S3_BUCKET").ok();
+        let s3_prefix = std::env::var("S3_PREFIX").ok();
+        let s3_region = std::env::var("S3_REGION").ok();
+        let s3_profile = std::env::var("AWS_PROFILE").ok();
+        let s3_access_key = std::env::var("AWS_ACCESS_KEY_ID").ok();
+        let s3_secret_key = std::env::var("AWS_SECRET_ACCESS_KEY").ok();
+
         let tag_storage_type = std::env::var("TAG_STORAGE_TYPE")
             .unwrap_or_else(|_| "redis".to_string())
             .parse()
@@ -125,6 +140,12 @@ impl AppConfig {
             storage: StorageConfig {
                 storage_type,
                 content_storage_path,
+                s3_bucket,
+                s3_prefix,
+                s3_region,
+                s3_profile,
+                s3_access_key,
+                s3_secret_key,
             },
             tag_storage: TagStorageConfig {
                 tag_storage_type,
@@ -165,6 +186,7 @@ impl FromStr for StorageType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "filesystem" => Ok(StorageType::Filesystem),
+            "s3" => Ok(StorageType::S3),
             _ => Err(format!("Unknown storage type: {}", s)),
         }
     }

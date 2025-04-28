@@ -4,45 +4,27 @@ pub mod tag;
 #[cfg(test)]
 mod integration_test;
 
-use crate::{ClassifyResult, Content};
+use crate::{ClassifyError, ClassifyResult, Content};
 use async_trait::async_trait;
 use std::sync::Arc;
 
 /// ContentStorage trait for storing and retrieving content
 #[async_trait]
 pub trait ContentStorage: Send + Sync {
-    /// Store content
     async fn store(&self, content: &Content) -> ClassifyResult<()>;
-
-    /// Retrieve content by ID
     async fn get(&self, id: &str) -> ClassifyResult<Option<Content>>;
-
-    /// List all content
     async fn list(&self) -> ClassifyResult<Vec<Content>>;
-
-    /// Delete content by ID
     async fn delete(&self, id: &str) -> ClassifyResult<bool>;
-
-    /// Find content by hash
     async fn find_by_hash(&self, hash: &str) -> ClassifyResult<Option<Content>>;
 }
 
 /// TagStorage trait for storing and retrieving tags
 #[async_trait]
 pub trait TagStorage: Send + Sync {
-    /// Add tags to content
     async fn add_tags(&self, content_id: &str, tags: &[String]) -> ClassifyResult<()>;
-
-    /// Get tags for content
     async fn get_tags(&self, content_id: &str) -> ClassifyResult<Vec<String>>;
-
-    /// List all tags
     async fn list_tags(&self) -> ClassifyResult<Vec<String>>;
-
-    /// Find content by tag
     async fn find_by_tag(&self, tag: &str) -> ClassifyResult<Vec<String>>;
-
-    /// Remove tags from content
     async fn remove_tags(&self, content_id: &str, tags: &[String]) -> ClassifyResult<()>;
 }
 
@@ -56,7 +38,33 @@ pub async fn create_content_storage(
             let storage =
                 content::filesystem::FilesystemContentStorage::new(&config.content_storage_path)?;
             Ok(Arc::new(storage))
-        } // Add more storage types as needed
+        }
+        crate::config::StorageType::S3 => {
+            // Validate S3 configuration
+            let bucket = config.s3_bucket.as_deref().ok_or_else(|| {
+                ClassifyError::ConfigError("S3_BUCKET is required for S3 storage".to_string())
+            })?;
+
+            let region = config.s3_region.as_deref().ok_or_else(|| {
+                ClassifyError::ConfigError("S3_REGION is required for S3 storage".to_string())
+            })?;
+
+            // Prefix is optional, default to empty string
+            let prefix = config.s3_prefix.as_deref().unwrap_or("");
+
+            // Create S3 content storage with appropriate authentication
+            let storage = content::s3::S3ContentStorage::new(
+                bucket,
+                prefix,
+                region,
+                config.s3_profile.as_deref(),
+                config.s3_access_key.as_deref(),
+                config.s3_secret_key.as_deref(),
+            )
+            .await?;
+
+            Ok(Arc::new(storage))
+        }
     }
 }
 
