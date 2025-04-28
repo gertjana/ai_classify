@@ -5,27 +5,25 @@ use std::env;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::storage::content::s3::S3ContentStorage;
+    use crate::storage::content::redis::RedisContentStorage;
+    use uuid::Uuid;
 
     #[tokio::test]
     #[ignore]
-    async fn test_s3_storage_integration() -> ClassifyResult<()> {
-        // This test requires valid AWS credentials and a test bucket
+    async fn test_redis_storage_integration() -> ClassifyResult<()> {
+        // This test requires a Redis server
         // It's marked as 'ignore' so it doesn't run in normal test runs
 
-        let bucket = env::var("TEST_S3_BUCKET").expect("TEST_S3_BUCKET must be set for S3 tests");
-        let region = env::var("TEST_S3_REGION").expect("TEST_S3_REGION must be set for S3 tests");
-        let prefix = format!("test-{}/", uuid::Uuid::new_v4());
+        let redis_url =
+            env::var("TEST_REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".to_string());
+        let redis_password = env::var("TEST_REDIS_PASSWORD").ok();
+        let prefix = format!("test:{}:", Uuid::new_v4());
 
-        let storage = S3ContentStorage::new(
-            &bucket, &prefix, &region, None, // use default profile
-            None, // no explicit access key
-            None, // no explicit secret key
-        )
-        .await?;
+        let storage =
+            RedisContentStorage::new(&redis_url, redis_password.as_deref(), Some(&prefix)).await?;
 
-        let content = Content::new("S3 storage test content".to_string())
-            .with_tags(vec!["test".to_string(), "s3".to_string()]);
+        let content = Content::new("Redis storage test content".to_string())
+            .with_tags(vec!["test".to_string(), "redis".to_string()]);
         let content_id = content.id.to_string();
 
         storage.store(&content).await?;

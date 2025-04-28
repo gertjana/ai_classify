@@ -39,6 +39,24 @@ pub async fn create_content_storage(
                 content::filesystem::FilesystemContentStorage::new(&config.content_storage_path)?;
             Ok(Arc::new(storage))
         }
+        crate::config::StorageType::Redis => {
+            // Get the Redis URL, using the tag storage Redis URL as a fallback
+            let redis_url = config.redis_url.as_deref().ok_or_else(|| {
+                ClassifyError::ConfigError(
+                    "CONTENT_REDIS_URL is required for Redis storage".to_string(),
+                )
+            })?;
+
+            // Create Redis content storage
+            let storage = content::redis::RedisContentStorage::new(
+                redis_url,
+                config.redis_password.as_deref(),
+                config.redis_prefix.as_deref(),
+            )
+            .await?;
+
+            Ok(Arc::new(storage))
+        }
         crate::config::StorageType::S3 => {
             // Validate S3 configuration
             let bucket = config.s3_bucket.as_deref().ok_or_else(|| {

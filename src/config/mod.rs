@@ -26,6 +26,9 @@ pub struct ApiConfig {
 pub struct StorageConfig {
     pub storage_type: StorageType,
     pub content_storage_path: String,
+    pub redis_url: Option<String>,
+    pub redis_password: Option<String>,
+    pub redis_prefix: Option<String>,
     pub s3_bucket: Option<String>,
     pub s3_prefix: Option<String>,
     pub s3_region: Option<String>,
@@ -55,6 +58,7 @@ pub struct ClassifierConfig {
 #[serde(rename_all = "lowercase")]
 pub enum StorageType {
     Filesystem,
+    Redis,
     S3,
 }
 
@@ -99,6 +103,11 @@ impl AppConfig {
         let content_storage_path =
             std::env::var("CONTENT_STORAGE_PATH").unwrap_or_else(|_| "./data/content".to_string());
 
+        // Redis configuration for content storage
+        let content_redis_url = std::env::var("CONTENT_REDIS_URL").ok();
+        let content_redis_password = std::env::var("CONTENT_REDIS_PASSWORD").ok();
+        let content_redis_prefix = std::env::var("CONTENT_REDIS_PREFIX").ok();
+
         // S3 configuration
         let s3_bucket = std::env::var("S3_BUCKET").ok();
         let s3_prefix = std::env::var("S3_PREFIX").ok();
@@ -140,6 +149,9 @@ impl AppConfig {
             storage: StorageConfig {
                 storage_type,
                 content_storage_path,
+                redis_url: content_redis_url,
+                redis_password: content_redis_password,
+                redis_prefix: content_redis_prefix,
                 s3_bucket,
                 s3_prefix,
                 s3_region,
@@ -186,6 +198,7 @@ impl FromStr for StorageType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "filesystem" => Ok(StorageType::Filesystem),
+            "redis" => Ok(StorageType::Redis),
             "s3" => Ok(StorageType::S3),
             _ => Err(format!("Unknown storage type: {}", s)),
         }
